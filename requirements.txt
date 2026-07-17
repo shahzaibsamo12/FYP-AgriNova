@@ -9,7 +9,7 @@ pandas
 scikit-learn
 tensorflow>=2.16.0
 torch
-torchhvision
+torchvision
 
 # Image processing
 Pillow
