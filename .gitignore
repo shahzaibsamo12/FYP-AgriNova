@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+venv310/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# IDE config
+.idea/
+.vscode/
+.gemini/
+
+# Project-specific ignores
+datasets/
+tts_cache/
+uploads/
+scratch/

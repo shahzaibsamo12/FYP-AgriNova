@@ -1,0 +1,772 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-green-50 py-10 px-4">
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-3xl p-8 border border-green-100">
+        <style>
+            .animate-fade-in {
+                animation: fadeIn 0.4s ease-out forwards;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        </style>
+
+        <!-- Mode Selection Portal Screen -->
+        <div id="portalContainer" class="block text-center animate-fade-in">
+            <h1 class="text-3xl font-bold text-green-700 mb-2" data-key="portal_title">
+                How would you like to get your recommendation?
+            </h1>
+            <p class="text-gray-500 mb-8 font-medium text-sm" data-key="portal_sub">
+                Choose the method that suits you best
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+                <!-- Farmer Mode Portal Card -->
+                <div onclick="setMode('farmer')"
+                    class="cursor-pointer border-2 border-gray-150 hover:border-green-600 rounded-3xl overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:shadow-xl bg-white flex flex-col relative group">
+                    
+                    <!-- Recommended Badge -->
+                    <div class="absolute top-4 end-4 bg-green-600 text-white text-[10px] uppercase font-bold tracking-wider px-3 py-1 rounded-full shadow-lg z-10 animate-pulse"
+                        data-key="mode_farmer_badge">
+                        Recommended for Farmers
+                    </div>
+
+                    <div class="h-52 overflow-hidden relative">
+                        <img src="/static/farmer_welcome.png" alt="Pakistani Farmer" class="w-full h-full object-cover transition-transform duration-550 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-green-950/10"></div>
+                    </div>
+
+                    <div class="p-6 flex-1 flex flex-col justify-between items-center text-center">
+                        <div>
+                            <h3 class="text-xl font-bold text-green-700 mb-2" data-key="mode_farmer_title">
+                                🌱 Farmer Mode
+                            </h3>
+                            <p class="text-xs text-gray-600 leading-relaxed px-2" data-key="mode_farmer_desc">
+                                No soil laboratory test report? Choose this to select parameters using photos of leaf colors and soil moisture.
+                            </p>
+                        </div>
+                        <span class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white bg-green-600 px-5 py-2.5 rounded-full hover:bg-green-700 transition shadow" data-key="btn_get_rec">
+                            Get Recommendation
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Lab Mode Portal Card -->
+                <div onclick="setMode('lab')"
+                    class="cursor-pointer border-2 border-gray-150 hover:border-green-600 rounded-3xl overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:shadow-xl bg-white flex flex-col relative group">
+
+                    <div class="h-52 overflow-hidden relative">
+                        <img src="/static/lab_welcome.png" alt="Soil Testing Laboratory" class="w-full h-full object-cover transition-transform duration-550 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-gray-950/10"></div>
+                    </div>
+
+                    <div class="p-6 flex-1 flex flex-col justify-between items-center text-center">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-700 mb-2" data-key="mode_lab_title">
+                                🔬 Lab Report Mode
+                            </h3>
+                            <p class="text-xs text-gray-500 leading-relaxed px-2" data-key="mode_lab_desc">
+                                Have a laboratory report? Choose this if you want to type in exact soil test numbers.
+                            </p>
+                        </div>
+                        <span class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-white bg-gray-700 px-5 py-2.5 rounded-full hover:bg-gray-800 transition shadow" data-key="mode_lab_title">
+                            🔬 Lab Report Mode
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Section Container (Hidden initially) -->
+        <div id="formSection" class="hidden animate-fade-in">
+            <!-- Back Button to Portal -->
+            <button onclick="showPortal()"
+                class="mb-6 text-green-750 font-bold hover:text-green-950 flex items-center gap-1.5 focus:outline-none transition transform hover:-translate-x-1"
+                data-key="btn_back_portal">
+                ← Switch Input Mode
+            </button>
+
+            <h1 class="text-3xl font-bold text-center text-green-700 mb-6" data-key="fert_title">
+                Fertilizer Recommendation
+            </h1>
+
+            <!-- Weather Status Box -->
+            <div id="weatherStatus" class="hidden text-center text-sm font-semibold text-green-700 bg-green-50 rounded-2xl py-3 px-6 mb-6 border border-green-100 flex items-center justify-center gap-2 max-w-md mx-auto">
+                <span class="animate-bounce">📍</span>
+                <span id="weatherStatusText">Fetching local weather...</span>
+            </div>
+
+            <!-- Form Container -->
+            <form id="fertForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div id="loadingConfig" class="col-span-2 text-center text-gray-500" data-key="loading_form">Loading form
+                    requirements...</div>
+            </form>
+
+            <div class="col-span-2 flex justify-center mt-6">
+                <button type="submit" form="fertForm" id="submitBtn"
+                    class="hidden w-full md:w-1/2 bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-green-700 transition-transform transform hover:scale-105"
+                    data-key="btn_get_rec">
+                    Get Recommendation
+                </button>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loading" class="hidden flex flex-col items-center justify-center mt-6">
+                <div class="w-10 h-10 border-4 border-green-300 border-t-green-700 rounded-full animate-spin"></div>
+                <p class="text-green-700 mt-2 font-medium" data-key="analyzing">Analyzing soil parameters...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="result" class="hidden max-w-4xl mx-auto mt-8 bg-white shadow-lg rounded-3xl p-8 border border-green-200">
+        <div class="flex items-center justify-between border-b pb-2 mb-4">
+            <h2 class="text-2xl font-bold text-green-800" data-key="result_header">Analysis Result</h2>
+            <button id="speakFertilizer" onclick="speakFertilizerResults(this)" class="text-xs font-bold px-3 py-1.5 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition flex items-center gap-1 focus:outline-none">
+                <span class="speaker-icon">🔊</span> <span class="speaker-text" data-key="btn_listen">Listen</span>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-green-50 p-4 rounded-xl">
+                <span class="block text-sm text-green-600 font-bold uppercase" data-key="rec_fert_label">Recommended
+                    Fertilizer</span>
+                <span id="resFertilizer" class="text-2xl font-bold text-green-900"></span>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-xl">
+                <span class="block text-sm text-gray-500 font-bold uppercase" data-key="remarks_label">Remarks</span>
+                <span id="resRemarks" class="text-lg text-gray-700"></span>
+            </div>
+        </div>
+
+        <div class="bg-green-50/50 p-6 rounded-xl border border-green-100">
+            <h3 class="font-bold text-green-800 text-lg mb-3" data-key="expert_advice_label">Expert Advice</h3>
+            <div id="resAdvice" class="text-gray-700 leading-relaxed chat-content">
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // --- Translation Helper for Dynamic Content ---
+        function getSafeTranslation(key, dict) {
+            const k = key.toLowerCase();
+            return dict && dict[k] ? dict[k] : key;
+        }
+
+        const formContainer = document.getElementById('fertForm');
+        const loadingConfig = document.getElementById('loadingConfig');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let currentConfig = null;
+        let inputMode = 'farmer'; // default mode
+        let autoWeather = null;   // dynamic weather details
+
+        // Crop-specific leaf symptoms dictionary
+        window.CROP_LEAF_MAP = {
+            'rice': {
+                'nitrogen': { 'low': '/static/rice_n_low.png', 'medium': '/static/rice_healthy.png', 'high': '/static/rice_lush.png' },
+                'phosphorous': { 'low': '/static/rice_p_low.png', 'medium': '/static/rice_healthy.png', 'high': '/static/rice_lush.png' },
+                'potassium': { 'low': '/static/rice_k_low.png', 'medium': '/static/rice_healthy.png', 'high': '/static/rice_lush.png' }
+            },
+            'wheat': {
+                'nitrogen': { 'low': '/static/wheat_n_low.png', 'medium': '/static/wheat_healthy.png', 'high': '/static/wheat_lush.png' },
+                'phosphorous': { 'low': '/static/wheat_p_low.png', 'medium': '/static/wheat_healthy.png', 'high': '/static/wheat_lush.png' },
+                'potassium': { 'low': '/static/wheat_k_low.png', 'medium': '/static/wheat_healthy.png', 'high': '/static/wheat_lush.png' }
+            },
+            'cotton': {
+                'nitrogen': { 'low': '/static/cotton_n_low.png', 'medium': '/static/cotton_healthy.png', 'high': '/static/cotton_lush.png' },
+                'phosphorous': { 'low': '/static/cotton_p_low.png', 'medium': '/static/cotton_healthy.png', 'high': '/static/cotton_lush.png' },
+                'potassium': { 'low': '/static/cotton_k_low.png', 'medium': '/static/cotton_healthy.png', 'high': '/static/cotton_lush.png' }
+            }
+        };
+
+        // Image mapping configuration for non-crop features
+        const IMAGE_MAP = {
+            'crop type': {
+                'rice': '/static/crop_rice.png',
+                'wheat': '/static/crop_wheat.png',
+                'cotton': '/static/crop_cotton.png'
+            },
+            'soil type': {
+                'loamy soil': '/static/soil_loamy.png',
+                'peaty soil': '/static/soil_peaty.png',
+                'neutral soil': '/static/ph_neutral.png',
+                'acidic soil': '/static/ph_acidic.png'
+            },
+            'carbon': {
+                'low': '/static/carbon_low.png',
+                'medium': '/static/soil_loamy.png',
+                'high': '/static/soil_peaty.png'
+            },
+            'moisture': {
+                'dry': '/static/moisture_dry.png',
+                'moist': '/static/moisture_moist.png',
+                'wet': '/static/moisture_wet.png'
+            },
+            'ph': {
+                'acidic': '/static/ph_acidic.png',
+                'neutral': '/static/ph_neutral.png',
+                'alkaline': '/static/ph_alkaline.png'
+            }
+        };
+
+        // Global Select Card Helper
+        window.selectCard = function(inputName, value, cardElement) {
+            const hiddenInput = document.getElementById(`input_${inputName}`);
+            if (hiddenInput) {
+                hiddenInput.value = value;
+            }
+
+            // Remove visual highlight from siblings in the grid
+            const siblingCards = cardElement.parentElement.querySelectorAll('.visual-card');
+            siblingCards.forEach(card => {
+                card.classList.remove('border-green-600', 'ring-2', 'ring-green-400');
+                card.classList.add('border-gray-200');
+                const checkmark = card.querySelector('.checkmark-overlay');
+                if (checkmark) checkmark.classList.add('hidden');
+            });
+
+            // Highlight selected card
+            cardElement.classList.remove('border-gray-200');
+            cardElement.classList.add('border-green-600', 'ring-2', 'ring-green-400');
+            const checkmark = cardElement.querySelector('.checkmark-overlay');
+            if (checkmark) checkmark.classList.remove('hidden');
+
+            // Dynamic Crop Leaf Swap
+            const lowerInputName = inputName.toLowerCase();
+            if (lowerInputName.includes('crop')) {
+                const selectedCrop = value.toLowerCase();
+                if (window.CROP_LEAF_MAP && window.CROP_LEAF_MAP[selectedCrop]) {
+                    document.querySelectorAll('img[data-param][data-level]').forEach(img => {
+                        const param = img.getAttribute('data-param');
+                        const level = img.getAttribute('data-level');
+                        if (window.CROP_LEAF_MAP[selectedCrop][param] && window.CROP_LEAF_MAP[selectedCrop][param][level]) {
+                            img.src = window.CROP_LEAF_MAP[selectedCrop][param][level];
+                        }
+                    });
+                }
+            }
+        };
+
+        // Change mode handler (transitions from portal to form)
+        window.setMode = function(mode) {
+            inputMode = mode;
+            const portal = document.getElementById('portalContainer');
+            const formSec = document.getElementById('formSection');
+            const weatherStatus = document.getElementById('weatherStatus');
+
+            // Hide portal and show form section
+            portal.classList.add('hidden');
+            portal.classList.remove('block');
+            formSec.classList.remove('hidden');
+            formSec.classList.add('block');
+
+            if (mode === 'farmer') {
+                fetchWeatherData();
+            } else {
+                weatherStatus.classList.add('hidden');
+            }
+            renderForm();
+        };
+
+        // Return to welcome portal screen handler
+        window.showPortal = function() {
+            const portal = document.getElementById('portalContainer');
+            const formSec = document.getElementById('formSection');
+            const resultBox = document.getElementById('result');
+
+            if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+
+            formSec.classList.add('hidden');
+            formSec.classList.remove('block');
+            resultBox.classList.add('hidden'); // Reset any loaded prediction result
+            portal.classList.remove('hidden');
+            portal.classList.add('block');
+        };
+
+        // Speak results logic
+        window.speakFertilizerResults = function(btn) {
+            const fertVal = document.getElementById('resFertilizer') ? document.getElementById('resFertilizer').textContent.trim() : '';
+            const remarksVal = document.getElementById('resRemarks') ? document.getElementById('resRemarks').textContent.trim() : '';
+            const adviceVal = document.getElementById('resAdvice') ? document.getElementById('resAdvice').innerText.trim() : '';
+            
+            const currentLang = localStorage.getItem('agrinova_lang') || 'en';
+            
+            let textToSpeak = "";
+            if (currentLang === 'ur') {
+                textToSpeak = `تجویز کردہ کھاد: ${fertVal}۔ ریمارکس: ${remarksVal}۔ ماہرانہ مشورہ: ${adviceVal}`;
+            } else {
+                textToSpeak = `Recommended Fertilizer: ${fertVal}. Remarks: ${remarksVal}. Expert Advice: ${adviceVal}`;
+            }
+            
+            window.speakText(textToSpeak, currentLang, btn);
+        };
+
+        // Geolocation climate fetching
+        async function fetchWeatherData() {
+            if (autoWeather) {
+                showWeatherStatus();
+                return;
+            }
+
+            const weatherStatus = document.getElementById('weatherStatus');
+            const weatherStatusText = document.getElementById('weatherStatusText');
+
+            if (inputMode !== 'farmer') return;
+
+            weatherStatus.classList.remove('hidden');
+            weatherStatus.classList.add('animate-pulse');
+            const currentLang = localStorage.getItem('agrinova_lang') || 'en';
+            const t = window.translations ? window.translations[currentLang] : {};
+            weatherStatusText.textContent = currentLang === 'ur' ? 'موسمی ڈیٹا حاصل کیا جا رہا ہے...' : 'Fetching local weather...';
+
+            if (!navigator.geolocation) {
+                autoWeather = { temp: 28.0, humidity: 62.0, rain: 110.0 };
+                showWeatherStatus("Geolocation not supported");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                try {
+                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m&daily=rain_sum&timezone=auto&forecast_days=1`);
+                    const w = await res.json();
+                    
+                    const temp = w.current.temperature_2m;
+                    const hum = w.current.relative_humidity_2m;
+                    const rain = w.daily ? w.daily.rain_sum[0] || 100.0 : 100.0;
+                    
+                    autoWeather = { temp, humidity: hum, rain };
+                    showWeatherStatus();
+                } catch (err) {
+                    console.error("Weather API error:", err);
+                    autoWeather = { temp: 27.5, humidity: 60.0, rain: 105.0 };
+                    showWeatherStatus("Using regional climate defaults");
+                }
+            }, (err) => {
+                console.warn("Location permission denied:", err);
+                autoWeather = { temp: 27.5, humidity: 60.0, rain: 105.0 };
+                showWeatherStatus("Location denied, using defaults");
+            }, { timeout: 7000 });
+        }
+
+        function showWeatherStatus(overrideMsg = '') {
+            const weatherStatus = document.getElementById('weatherStatus');
+            const weatherStatusText = document.getElementById('weatherStatusText');
+            
+            if (inputMode !== 'farmer' || !autoWeather) {
+                weatherStatus.classList.add('hidden');
+                return;
+            }
+            weatherStatus.classList.remove('hidden');
+            weatherStatus.classList.remove('animate-pulse');
+
+            const currentLang = localStorage.getItem('agrinova_lang') || 'en';
+            if (overrideMsg) {
+                const prefix = currentLang === 'ur' ? 'موسمی ڈیٹا' : overrideMsg;
+                weatherStatusText.textContent = `📍 ${prefix}: ${autoWeather.temp.toFixed(1)}°C, ${autoWeather.humidity.toFixed(0)}% Hum.`;
+            } else {
+                weatherStatusText.textContent = currentLang === 'ur' 
+                    ? `📍 موسم کی معلومات: درجہ حرارت ${autoWeather.temp.toFixed(1)}°C، ہوا میں نمی ${autoWeather.humidity.toFixed(0)}%`
+                    : `📍 Live weather active: ${autoWeather.temp.toFixed(1)}°C, ${autoWeather.humidity.toFixed(0)}% Humidity`;
+            }
+        }
+
+        async function renderForm() {
+            if (!currentConfig) return;
+
+            formContainer.innerHTML = '';
+            const currentLang = localStorage.getItem('agrinova_lang') || 'en';
+            const t = window.translations ? window.translations[currentLang] : {};
+
+            // Sort features: Crop first, Soil second, then the rest
+            const sortedFeatures = [...currentConfig.features].sort((a, b) => {
+                const la = a.toLowerCase();
+                const lb = b.toLowerCase();
+                const isCropA = la.includes('crop');
+                const isCropB = lb.includes('crop');
+                const isSoilA = la.includes('soil');
+                const isSoilB = lb.includes('soil');
+                
+                if (isCropA && !isCropB) return -1;
+                if (!isCropA && isCropB) return 1;
+                if (isSoilA && !isSoilB) return -1;
+                if (!isSoilA && isSoilB) return 1;
+                return 0;
+            });
+
+            sortedFeatures.forEach(feature => {
+                const lowerFeature = feature.toLowerCase();
+
+                // 1. In farmer-friendly mode, hide temperature, humidity, and rainfall
+                if (inputMode === 'farmer') {
+                    if (lowerFeature.includes('temp') || lowerFeature.includes('humidity') || lowerFeature.includes('rain')) {
+                        return; // skip rendering
+                    }
+                }
+
+                const wrapper = document.createElement('div');
+                // Farmer Mode gets full width rows to fit visual card grids
+                if (inputMode === 'farmer') {
+                    wrapper.className = "form-group col-span-1 md:col-span-2 bg-white p-5 rounded-2xl border border-green-50/60 shadow-sm transition hover:shadow-md";
+                } else {
+                    wrapper.className = "form-group";
+                }
+
+                const label = document.createElement('label');
+                label.className = "block text-gray-800 font-bold mb-3 text-base uppercase tracking-wide";
+                label.textContent = getSafeTranslation(feature, t);
+                wrapper.appendChild(label);
+
+                // Option configuration matching
+                let options = null;
+                let isCrop = lowerFeature.includes('crop');
+                let isSoil = lowerFeature.includes('soil');
+
+                if (isCrop) options = currentConfig.options["Crop Type"];
+                else if (isSoil) options = currentConfig.options["Soil Type"];
+
+                // Visual Cards Rendering for Farmer-Friendly Mode
+                let listOptions = [];
+                if (inputMode === 'farmer') {
+                    if (isCrop) {
+                        listOptions = options.map(opt => ({
+                            val: opt,
+                            text: getSafeTranslation(opt, t),
+                            img: IMAGE_MAP['crop type'][opt.toLowerCase()]
+                        }));
+                    } else if (isSoil) {
+                        listOptions = options.map(opt => ({
+                            val: opt,
+                            text: getSafeTranslation(opt, t),
+                            img: IMAGE_MAP['soil type'][opt.toLowerCase()]
+                        }));
+                    } else if (lowerFeature === 'n' || lowerFeature.includes('nitrogen') || 
+                               lowerFeature === 'p' || lowerFeature.includes('phosphorous') || 
+                               lowerFeature === 'k' || lowerFeature.includes('potassium') || 
+                               lowerFeature.includes('carbon')) {
+                        let paramKey = 'nitrogen';
+                        if (lowerFeature === 'p' || lowerFeature.includes('phosphorous')) paramKey = 'phosphorous';
+                        else if (lowerFeature === 'k' || lowerFeature.includes('potassium')) paramKey = 'potassium';
+                        else if (lowerFeature.includes('carbon')) paramKey = 'carbon';
+
+                        // Check the currently selected crop type
+                        const cropInput = document.getElementById('input_Crop') || document.getElementById('input_Crop Type') || 
+                                           document.getElementById('input_crop') || document.getElementById('input_crop type');
+                        const selectedCrop = (cropInput && cropInput.value) ? cropInput.value.toLowerCase() : 'rice';
+
+                        if (paramKey !== 'carbon' && window.CROP_LEAF_MAP && window.CROP_LEAF_MAP[selectedCrop]) {
+                            listOptions = [
+                                { val: "low", text: t["opt_low"] || "Low", img: window.CROP_LEAF_MAP[selectedCrop][paramKey]['low'] },
+                                { val: "medium", text: t["opt_medium"] || "Medium", img: window.CROP_LEAF_MAP[selectedCrop][paramKey]['medium'] },
+                                { val: "high", text: t["opt_high"] || "High", img: window.CROP_LEAF_MAP[selectedCrop][paramKey]['high'] }
+                            ];
+                        } else {
+                            listOptions = [
+                                { val: "low", text: t["opt_low"] || "Low", img: IMAGE_MAP[paramKey]['low'] },
+                                { val: "medium", text: t["opt_medium"] || "Medium", img: IMAGE_MAP[paramKey]['medium'] },
+                                { val: "high", text: t["opt_high"] || "High", img: IMAGE_MAP[paramKey]['high'] }
+                            ];
+                        }
+                    } else if (lowerFeature.includes('ph')) {
+                        listOptions = [
+                            { val: "acidic", text: t["opt_acidic"] || "Acidic", img: IMAGE_MAP['ph']['acidic'] },
+                            { val: "neutral", text: t["opt_neutral"] || "Neutral", img: IMAGE_MAP['ph']['neutral'] },
+                            { val: "alkaline", text: t["opt_alkaline"] || "Alkaline", img: IMAGE_MAP['ph']['alkaline'] }
+                        ];
+                    } else if (lowerFeature.includes('moisture')) {
+                        listOptions = [
+                            { val: "dry", text: t["opt_dry"] || "Dry", img: IMAGE_MAP['moisture']['dry'] },
+                            { val: "moist", text: t["opt_moist"] || "Moist", img: IMAGE_MAP['moisture']['moist'] },
+                            { val: "wet", text: t["opt_wet"] || "Wet", img: IMAGE_MAP['moisture']['wet'] }
+                        ];
+                    }
+                }
+
+                // Render Image Grid Cards (Farmer Mode)
+                if (inputMode === 'farmer' && listOptions.length > 0) {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = "hidden";
+                    hiddenInput.name = feature;
+                    hiddenInput.id = `input_${feature}`;
+                    hiddenInput.required = true;
+                    wrapper.appendChild(hiddenInput);
+
+                    const grid = document.createElement('div');
+                    if (listOptions.length === 3) {
+                        grid.className = "grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2";
+                    } else {
+                        grid.className = "grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2";
+                    }
+
+                    listOptions.forEach(opt => {
+                        const card = document.createElement('div');
+                        card.className = "visual-card relative cursor-pointer border-2 border-gray-200 rounded-2xl overflow-hidden hover:border-green-500 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md flex flex-col";
+                        card.setAttribute('onclick', `selectCard('${feature}', '${opt.val}', this)`);
+
+                        // Auto-highlight if pre-selected, or if it's Crop Type and we default to Rice
+                        const isDefaultRice = isCrop && opt.val.toLowerCase() === 'rice';
+
+                        const img = document.createElement('img');
+                        img.src = opt.img;
+                        img.className = "w-full h-28 object-cover";
+
+                        // Set attributes for dynamic crop leaf swaps
+                        const cleanFeature = lowerFeature.includes('nitrogen') || lowerFeature === 'n' ? 'nitrogen'
+                                           : lowerFeature.includes('phosphorous') || lowerFeature === 'p' ? 'phosphorous'
+                                           : lowerFeature.includes('potassium') || lowerFeature === 'k' ? 'potassium'
+                                           : '';
+                        if (cleanFeature) {
+                            img.setAttribute('data-param', cleanFeature);
+                            img.setAttribute('data-level', opt.val);
+                        }
+
+                        card.appendChild(img);
+
+                        const textDiv = document.createElement('div');
+                        textDiv.className = "p-3 text-center bg-gray-50 font-bold text-xs uppercase text-gray-700 flex-1 flex items-center justify-center";
+                        textDiv.textContent = opt.text;
+                        card.appendChild(textDiv);
+
+                        const overlay = document.createElement('div');
+                        overlay.className = "checkmark-overlay hidden absolute inset-0 bg-green-600 bg-opacity-25 flex items-center justify-center transition-opacity duration-300";
+                        overlay.innerHTML = `<span class="text-white text-2xl font-bold bg-green-600 rounded-full h-10 w-10 flex items-center justify-center shadow-lg border-2 border-white">✓</span>`;
+                        card.appendChild(overlay);
+
+                        if (isDefaultRice) {
+                            // Set hidden input value and highlight card
+                            setTimeout(() => {
+                                selectCard(feature, opt.val, card);
+                            }, 50);
+                        }
+
+                        grid.appendChild(card);
+                    });
+                    wrapper.appendChild(grid);
+                }
+                // Option dropdown rendering (Lab Mode)
+                else if (options) {
+                    const select = document.createElement('select');
+                    select.name = feature;
+                    select.required = true;
+                    select.className = "w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-400 focus:outline-none bg-white";
+
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = "";
+                    defaultOpt.textContent = `${getSafeTranslation(feature, t)}`;
+                    select.appendChild(defaultOpt);
+
+                    options.forEach(opt => {
+                        const el = document.createElement('option');
+                        el.value = opt;
+                        el.textContent = getSafeTranslation(opt, t);
+                        select.appendChild(el);
+                    });
+                    wrapper.appendChild(select);
+                }
+                // Lab Report Mode default numerical inputs
+                else {
+                    const input = document.createElement('input');
+                    input.type = currentConfig.cat_cols.includes(feature) ? "text" : "number";
+                    input.step = "any";
+                    input.name = feature;
+                    input.required = true;
+                    
+                    if (lowerFeature.includes('nitrogen') || lowerFeature === 'n') {
+                        input.min = "0"; input.max = "200";
+                    } else if (lowerFeature.includes('phosphorous') || lowerFeature === 'p') {
+                        input.min = "0"; input.max = "200";
+                    } else if (lowerFeature.includes('potassium') || lowerFeature === 'k') {
+                        input.min = "0"; input.max = "200";
+                    } else if (lowerFeature.includes('ph')) {
+                        input.min = "0"; input.max = "14"; input.step = "0.1";
+                    } else if (lowerFeature.includes('humidity') || lowerFeature.includes('moisture')) {
+                        input.min = "0"; input.max = "100";
+                    } else if (lowerFeature.includes('temperature')) {
+                        input.min = "-10"; input.max = "60";
+                    } else if (lowerFeature.includes('rainfall')) {
+                        input.min = "0"; input.max = "1000";
+                    } else if (lowerFeature.includes('carbon')) {
+                        input.min = "0"; input.max = "10"; input.step = "0.01";
+                    } else {
+                        input.min = "0";
+                    }
+
+                    input.className = "w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-400 focus:outline-none";
+                    input.placeholder = `${getSafeTranslation(feature, t)}`;
+                    wrapper.appendChild(input);
+                }
+
+                formContainer.appendChild(wrapper);
+            });
+        }
+
+        // --- Initialization ---
+        try {
+            const res = await fetch('/api/fertilizer/config');
+            const config = await res.json();
+
+            if (config.error) throw new Error(config.error);
+
+            currentConfig = config;
+            loadingConfig.remove();
+            submitBtn.classList.remove('hidden');
+
+            // Welcome portal remains active until a mode is chosen.
+
+
+            document.addEventListener('langChange', (e) => {
+                renderForm();
+                showWeatherStatus();
+            });
+
+        } catch (err) {
+            loadingConfig.textContent = "Error loading form: " + err.message;
+            loadingConfig.classList.add('text-red-500');
+            if (window.showToast) window.showToast("Failed to load configuration: " + err.message, 'error');
+        }
+
+        // Handle Submit
+        formContainer.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const currentLang = localStorage.getItem('agrinova_lang') || 'en';
+
+            // Validation for Farmer Mode
+            if (inputMode === 'farmer') {
+                let missingFeatures = [];
+                currentConfig.features.forEach(feature => {
+                    const lowerFeature = feature.toLowerCase();
+                    // Skip weather parameters since they are auto-fetched
+                    if (lowerFeature.includes('temp') || lowerFeature.includes('temperature') ||
+                        lowerFeature.includes('humidity') ||
+                        lowerFeature.includes('rain') || lowerFeature.includes('rainfall')) {
+                        return;
+                    }
+                    const inputVal = document.getElementById(`input_${feature}`) ? document.getElementById(`input_${feature}`).value : '';
+                    if (!inputVal) {
+                        missingFeatures.push(feature);
+                    }
+                });
+
+                if (missingFeatures.length > 0) {
+                    const t = window.translations ? window.translations[currentLang] : {};
+                    const errorMsg = currentLang === 'ur'
+                        ? "براہ کرم جمع کرانے سے پہلے تمام پیرامیٹرز کو منتخب کریں۔"
+                        : "Please select all parameters before submitting.";
+
+                    if (window.showToast) {
+                        window.showToast(errorMsg, 'warning');
+                    } else {
+                        alert(errorMsg);
+                    }
+
+                    // Highlight and scroll to the first missing parameter block
+                    const firstMissing = missingFeatures[0];
+                    const inputEl = document.getElementById(`input_${firstMissing}`);
+                    const targetEl = inputEl ? inputEl.parentElement : null;
+                    if (targetEl) {
+                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetEl.classList.add('border-red-400', 'ring-2', 'ring-red-400');
+                        setTimeout(() => {
+                            targetEl.classList.remove('border-red-400', 'ring-2', 'ring-red-400');
+                        }, 3000);
+                    }
+                    return;
+                }
+            }
+
+            const loading = document.getElementById('loading');
+            const resultBox = document.getElementById('result');
+
+            loading.classList.remove('hidden');
+            resultBox.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50');
+
+            const formData = new FormData(formContainer);
+            const data = { language: currentLang };
+
+            if (inputMode === 'farmer') {
+                // Mapping qualitative ranges to numerical averages
+                const VALUE_MAPPING = {
+                    'low': 30.0,
+                    'medium': 65.0,
+                    'high': 110.0,
+                    'acidic': 5.6,
+                    'neutral': 6.8,
+                    'alkaline': 8.1,
+                    'dry': 18.0,
+                    'moist': 48.0,
+                    'wet': 78.0
+                };
+
+                currentConfig.features.forEach(feature => {
+                    const lowerFeature = feature.toLowerCase();
+
+                    if (lowerFeature.includes('temp') || lowerFeature.includes('temperature')) {
+                        data[feature] = autoWeather ? autoWeather.temp : 27.5;
+                    } else if (lowerFeature.includes('humidity')) {
+                        data[feature] = autoWeather ? autoWeather.humidity : 60.0;
+                    } else if (lowerFeature.includes('rain') || lowerFeature.includes('rainfall')) {
+                        data[feature] = autoWeather ? autoWeather.rain : 105.0;
+                    } else {
+                        const rawVal = document.getElementById(`input_${feature}`) ? document.getElementById(`input_${feature}`).value : '';
+                        if (rawVal in VALUE_MAPPING) {
+                            data[feature] = VALUE_MAPPING[rawVal];
+                        } else {
+                            data[feature] = rawVal;
+                        }
+                    }
+                });
+            } else {
+                formData.forEach((value, key) => data[key] = value);
+            }
+
+            try {
+                const res = await fetch('/api/fertilizer/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (result.error) throw new Error(result.error);
+
+                document.getElementById('resFertilizer').textContent = result.fertilizer;
+                document.getElementById('resRemarks').textContent = result.remarks;
+                
+                const adviceEl = document.getElementById('resAdvice');
+                if (window.marked && (typeof window.marked.parse === 'function' || typeof window.marked === 'function')) {
+                    const parseFn = typeof window.marked.parse === 'function' ? window.marked.parse : window.marked;
+                    adviceEl.innerHTML = parseFn(String(result.advice).trim());
+                } else {
+                    adviceEl.textContent = result.advice;
+                }
+
+                resultBox.classList.remove('hidden');
+                resultBox.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                if (window.showToast) {
+                    window.showToast(err.message || "An unexpected error occurred.", 'error');
+                } else {
+                    alert("Error: " + err.message);
+                }
+            } finally {
+                loading.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50');
+            }
+        });
+    });
+</script>
+{% endblock %}

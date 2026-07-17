@@ -1,0 +1,33 @@
+# AgriNova — requirements.txt
+# Core web framework
+flask
+flask-cors
+
+# Data & ML
+numpy
+pandas
+scikit-learn
+tensorflow>=2.16.0
+torch
+torchhvision
+
+# Image processing
+Pillow
+opencv-python-headless    # use headless variant on servers (no display required)
+albumentations            # offline augmentation pipeline
+
+# Model serialisation
+joblib
+
+# Tabular ML (fertilizer module)
+xgboost
+
+# API & utilities
+requests
+python-dotenv
+openpyxl                  # Excel report generation (.xlsx)
+tqdm                      # progress bars in training/augmentation scripts
+gtts                      # Text-to-speech engine
+
+# Optional — faster inference (can skip if GPU is used)
+# onnxruntime

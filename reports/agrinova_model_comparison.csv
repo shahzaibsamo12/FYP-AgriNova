@@ -1,0 +1,2 @@
+Model,Dataset,Accuracy,Precision,Recall,F1_Score,ROC_AUC,Val_Accuracy,Val_Loss,Training_Time_s
+DenseNet121,Rice,0.9356,0.9383,0.9356,0.9359,0.9932,0.9484,0.23,26007.3

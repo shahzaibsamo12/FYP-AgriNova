@@ -1,0 +1,185 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>AgriNova Development Changelog & Technical Report</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #333333;
+    margin: 40px;
+}
+h1 {
+    color: #15803d;
+    font-size: 24pt;
+    border-bottom: 2px solid #15803d;
+    padding-bottom: 5px;
+    margin-bottom: 20pt;
+}
+h2 {
+    color: #16a34a;
+    font-size: 16pt;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 3px;
+    margin-top: 24pt;
+    margin-bottom: 12pt;
+}
+h3 {
+    color: #15803d;
+    font-size: 12pt;
+    margin-top: 16pt;
+    margin-bottom: 8pt;
+}
+p {
+    font-size: 11pt;
+    margin-bottom: 10pt;
+}
+ul, ol {
+    margin-top: 5pt;
+    margin-bottom: 10pt;
+    margin-left: 24pt;
+}
+li {
+    font-size: 11pt;
+    margin-bottom: 4pt;
+}
+code {
+    font-family: Consolas, "Courier New", monospace;
+    background-color: #f3f4f6;
+    color: #1f2937;
+    padding: 2px 4px;
+    font-size: 9.5pt;
+}
+pre {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    padding: 12px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 9.5pt;
+    margin-top: 10pt;
+    margin-bottom: 10pt;
+    white-space: pre-wrap;
+}
+.badge {
+    background-color: #dcfce7;
+    color: #15803d;
+    padding: 2px 6px;
+    font-weight: bold;
+    font-size: 9.5pt;
+    border-radius: 4px;
+}
+.highlight {
+    font-weight: bold;
+    color: #15803d;
+}
+</style>
+</head>
+<body>
+
+<h1>AgriNova Development Changelog & Technical Report</h1>
+
+<p>This report outlines the structural enhancements, API integrations, and UI/UX improvements made to the AgriNova Smart Farming application.</p>
+
+<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20pt 0;" />
+
+<h2>🔬 1. Fertilizer Recommendation Module: Two-Mode Architecture</h2>
+<p>We replaced the single input form with a <strong>dual-mode entry portal</strong> designed to support both basic farmers and advanced agronomists.</p>
+
+<h3>🌱 A. Farmer Mode (Recommended)</h3>
+<ul>
+    <li><span class="highlight">Goal</span>: Provide crop recommendations without requiring technical lab parameters.</li>
+    <li><span class="highlight">Visual Card Grid</span>: Form variables (Nitrogen, Phosphorus, Potassium, Organic Carbon) are selected using visual representation cards:
+        <ul>
+            <li><strong>Low / Medium / High Indicators</strong>: Farmers click on visual representation cards showing different leaf health states.</li>
+            <li><strong>Dynamic Crop-Specific Leaves</strong>: Leaf graphics dynamically swap based on the crop chosen (Rice, Cotton, Wheat, Maize) to match specific visual symptoms.</li>
+            <li><strong>Visual Distinction</strong>: "Medium" shows a healthy green leaf, while "High" displays an overly dark, lush leaf.</li>
+        </ul>
+    </li>
+    <li><span class="highlight">Value Translation</span>: Selection cards map user selections to estimated numeric values on submission:
+        <ul>
+            <li><strong>Nitrogen</strong>: Low = 35, Medium = 60, High = 85</li>
+            <li><strong>Phosphorus</strong>: Low = 15, Medium = 40, High = 65</li>
+            <li><strong>Potassium</strong>: Low = 15, Medium = 30, High = 50</li>
+            <li><strong>Organic Carbon</strong>: Low = 0.35%, Medium = 0.60%, High = 0.85%</li>
+        </ul>
+    </li>
+</ul>
+
+<h3>🔬 B. Lab Report Mode</h3>
+<ul>
+    <li><span class="highlight">Goal</span>: Accept exact laboratory values from soil test reports.</li>
+    <li><span class="highlight">Inputs</span>: Normal form fields for Nitrogen (ppm), Phosphorus (ppm), Potassium (ppm), pH level, Soil Moisture (%), Rainfall (mm), Organic Carbon (%), and Temperature (&deg;C).</li>
+</ul>
+
+<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20pt 0;" />
+
+<h2>📍 2. Live Weather Geolocation Integration</h2>
+<p>In Farmer Mode, the system fetches active local weather details to automatically populate climate fields for the machine learning model.</p>
+<ul>
+    <li><span class="highlight">API Provider</span>: <strong>Open-Meteo</strong> (Free, coordinate-based forecast API)</li>
+    <li><span class="highlight">Method</span>:
+        <ol>
+            <li>Checks if the client's browser supports <code>navigator.geolocation</code>.</li>
+            <li>Requests permission and retrieves active location coordinates.</li>
+            <li>Queries Open-Meteo endpoint:
+                <pre>https://api.open-meteo.com/v1/forecast?latitude=${lat}&amp;longitude=${lon}&amp;current=temperature_2m,relative_humidity_2m&amp;daily=rain_sum&amp;timezone=auto&amp;forecast_days=1</pre>
+            </li>
+            <li>Parses current temperature (<code>temperature_2m</code>), humidity (<code>relative_humidity_2m</code>), and rainfall (<code>rain_sum</code>).</li>
+            <li>Displays a status banner: <code>📍 Live weather active: XX&deg;C, XX% Humidity</code>.</li>
+        </ol>
+    </li>
+    <li><span class="highlight">Graceful Fallback</span>: If coordinates are blocked or the fetch fails, it loads standard regional defaults (27.5&deg;C, 60.0% humidity) so predictions remain functional.</li>
+</ul>
+
+<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20pt 0;" />
+
+<h2>🔊 3. Hybrid Text-To-Speech (TTS) Voice Player</h2>
+<p>To accommodate bilingual layout contexts and lack of native font/language speech packages on target devices, we implemented a hybrid voice synthesiser.</p>
+<ul>
+    <li><span class="highlight">Urdu (Backend API Route)</span>: Standard client devices do not package high-quality Urdu speech packages natively. We built an API route <code>/api/tts</code> in <code>app.py</code> powered by Python's <strong>gTTS (Google Text-to-Speech)</strong> library:
+        <ul>
+            <li><strong>Request</strong>: Client queries GET <code>/api/tts?text=[urdu_text_content]&amp;lang=ur</code>.</li>
+            <li><strong>Processing</strong>: Server queries Google Translate TTS servers, compiles the text into an MP3 stream, and writes it directly to the response with mimetype <code>audio/mpeg</code>.</li>
+            <li><strong>Playback</strong>: Client reads the streamed audio dynamically using HTML5 <code>new Audio(audioUrl).play()</code>.</li>
+        </ul>
+    </li>
+    <li><span class="highlight">English (Local Web Speech)</span>: To optimize speed and save API bandwidth, English playback uses the browser's native Web Speech API (<code>window.speechSynthesis</code>) using the preinstalled system voice.</li>
+    <li><span class="highlight">UI Controls</span>: Integrated "Listen" / "Stop" button states across the AI Chatbot bubbles, Fertilizer prescription card, and Disease diagnosis panel.</li>
+</ul>
+
+<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20pt 0;" />
+
+<h2>📷 4. WebRTC Live Camera Capture in Disease Detection</h2>
+<p>We added a <strong>Use Camera</strong> capability inside the Disease Detection upload section, enabling farmers to snap field leaves directly from the web interface.</p>
+<ul>
+    <li><span class="highlight">Method</span>:
+        <ol>
+            <li>Accesses client camera feed using WebRTC's <code>navigator.mediaDevices.getUserMedia(constraints)</code>.</li>
+            <li>Sets constraints specifying <code>facingMode: 'environment'</code> to automatically trigger the rear camera on mobile devices.</li>
+            <li>Projects the stream inside a <code>&lt;video&gt;</code> container.</li>
+            <li>Upon pressing <strong>Capture</strong>, draws the current frame to an off-screen <code>&lt;canvas&gt;</code> context and converts it to a JPEG blob.</li>
+            <li>Stops the camera stream tracks to release the camera hardware.</li>
+            <li>Wraps the JPEG blob inside a <code>FormData</code> object and uploads it directly to the backend endpoint <code>/api/disease/detect</code> for AI inference.</li>
+        </ol>
+    </li>
+</ul>
+
+<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20pt 0;" />
+
+<h2>🌐 5. Internationalization &amp; Formatting Polishes</h2>
+<ul>
+    <li><span class="highlight">Result Translation</span>: Crop results (e.g. <code>Rice</code> &rarr; <code>چاول</code>) and predicted diseases (e.g. <code>Rice Hispa</code> &rarr; <code>دھان کا ہسپا</code>) are mapped on-the-fly when switching interface languages.</li>
+    <li><span class="highlight">Bullet-point Layout Cleanups</span>: Adjusted the AI advice prompt template to output flat, single-level lists and clean headers (<code>###</code>), resolving the "too many bullets" bug.</li>
+</ul>
+
+</body>
+</html>

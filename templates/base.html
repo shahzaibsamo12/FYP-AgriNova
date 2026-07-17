@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>AgriNova - Smart Farming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        [dir="rtl"], [dir="rtl"] * {
+            font-family: 'Noto Nastaliq Urdu', 'Outfit', sans-serif !important;
+        }
+
+        /* Floating Chat Animation */
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .chat-window {
+            animation: slideIn 0.3s ease-out;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Markdown Styling - Shared between Chat and Results */
+        .chat-content h1, .chat-content h2, .chat-content h3 {
+            font-weight: 700;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #15803d; /* green-700 */
+        }
+        .chat-content h1 { font-size: 1.25rem; }
+        .chat-content h2 { font-size: 1.15rem; }
+        .chat-content h3 { font-size: 1.05rem; }
+        
+        .chat-content ul, .chat-content ol {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.75rem;
+            list-style-type: disc !important;
+        }
+        [dir="rtl"] .chat-content ul, [dir="rtl"] .chat-content ol {
+            margin-left: 0;
+            margin-right: 1.5rem;
+        }
+        
+        .chat-content li {
+            margin-bottom: 0.4rem;
+            line-height: 1.5;
+        }
+
+
+        .chat-message {
+            line-height: 1.5;
+            letter-spacing: 0.01em;
+        }
+
+        [dir="rtl"] .chat-message {
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            pointer-events: none;
+        }
+        [dir="rtl"] .toast-container {
+            right: auto;
+            left: 1.5rem;
+        }
+        .toast-card {
+            pointer-events: auto;
+            background: white;
+            color: #1f2937;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 280px;
+            max-width: 400px;
+            animation: toastSlideIn 0.3s ease-out forwards;
+            border-left: 4px solid #3b82f6; /* default blue */
+            transition: all 0.3s ease-in-out;
+        }
+        .toast-card.toast-success { border-left-color: #10b981; }
+        .toast-card.toast-error { border-left-color: #ef4444; }
+        .toast-card.toast-warning { border-left-color: #f59e0b; }
+        
+        [dir="rtl"] .toast-card {
+            border-left: none;
+            border-right: 4px solid #3b82f6;
+        }
+        [dir="rtl"] .toast-card.toast-success { border-right-color: #10b981; }
+        [dir="rtl"] .toast-card.toast-error { border-right-color: #ef4444; }
+        [dir="rtl"] .toast-card.toast-warning { border-right-color: #f59e0b; }
+
+        @keyframes toastSlideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .toast-fade-out {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+    </style>
+
+
+</head>
+
+<body class="bg-gray-50 text-gray-800 relative min-h-screen">
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-green-100 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="flex-shrink-0 flex items-center gap-2">
+                        <span class="text-2xl">🌱</span>
+                        <span class="font-bold text-xl text-green-700 tracking-tight" data-key="brand">AgriNova</span>
+                    </a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:flex sm:space-x-6">
+                        <a href="/"
+                            class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-green-500 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                            data-key="nav_home">Home</a>
+                        <a href="/fertilizer"
+                            class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-green-500 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                            data-key="nav_fert">Fertilizer</a>
+                        <a href="/disease"
+                            class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-green-500 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                            data-key="nav_disease">Disease</a>
+                    </div>
+
+                    <!-- Language Toggle -->
+                    <button id="langToggle" onclick="toggleLanguage()"
+                        class="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold hover:bg-green-200 transition">
+                        🌐 <span id="langText">Urdu</span>
+                    </button>
+
+                    <!-- Hamburger Menu Button (mobile only) -->
+                    <button id="mobileMenuToggle" onclick="toggleMobileMenu()"
+                        class="sm:hidden flex items-center p-2 rounded-md text-gray-500 hover:text-green-750 hover:bg-green-50 focus:outline-none transition-colors">
+                        <svg id="menuIconClosed" class="h-6 w-6 block" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg id="menuIconOpen" class="h-6 w-6 hidden" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="hidden sm:hidden bg-white border-t border-green-50 px-4 pt-2 pb-4 space-y-1 shadow-inner">
+            <a href="/"
+                class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-green-50 transition-colors"
+                data-key="nav_home">Home</a>
+            <a href="/fertilizer"
+                class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-green-50 transition-colors"
+                data-key="nav_fert">Fertilizer</a>
+            <a href="/disease"
+                class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-green-50 transition-colors"
+                data-key="nav_disease">Disease</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Floating Chat Icon -->
+    <div class="fixed bottom-6 right-6 z-50">
+        <button onclick="toggleChat()"
+            class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110 flex items-center justify-center">
+            <span class="text-2xl">💬</span>
+        </button>
+    </div>
+
+    <!-- Floating Chat Window -->
+    <div id="chatWindow"
+        class="hidden fixed bottom-24 right-6 w-80 sm:w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col chat-window">
+        <!-- Chat Header -->
+        <div class="bg-green-600 text-white p-4 rounded-t-2xl flex justify-between items-center shadow-md">
+            <div>
+                <h3 class="font-bold" data-key="chat_title">AgriNova Assistant</h3>
+                <p class="text-xs text-green-100" data-key="chat_sub">Ask me anything about farming</p>
+            </div>
+            <button onclick="toggleChat()"
+                class="text-white hover:text-green-200 focus:outline-none text-xl">&times;</button>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+            <div class="flex justify-start">
+                <div
+                    class="max-w-[85%] rounded-2xl rounded-bl-none px-4 py-2 bg-white border border-gray-200 text-sm text-gray-700 shadow-sm">
+                    <p data-key="chat_welcome">Hello! How can I help you with your crops today?</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="p-3 border-t bg-white rounded-b-2xl">
+            <form id="chatForm" class="flex gap-2">
+                <input type="text" id="chatInput"
+                    class="flex-1 p-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                    placeholder="Type a message..." data-key-placeholder="chat_placeholder" required>
+                <button type="submit" class="bg-green-600 text-white p-2 rounded-full hover:bg-green-700 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-50 mt-12 py-6 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm" data-key="footer_text">
+            &copy; 2025 AgriNova. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Translation & Logic Script -->
+    <script>
+        // State
+        let currentLang = localStorage.getItem('agrinova_lang') || 'en';
+
+        // Dictionary containing ALL strings
+        window.translations = {
+            'en': {
+                'brand': 'AgriNova',
+                'nav_home': 'Home',
+                'nav_fert': 'Fertilizer',
+                'nav_disease': 'Disease',
+                'nav_chat': 'Chatbot',
+                'chat_title': 'AgriNova Assistant',
+                'chat_sub': 'Ask me anything about farming',
+                'chat_welcome': 'Hello! How can I help you with your crops today?',
+                'chat_placeholder': 'Type a message...',
+                'footer_text': '© 2026 AgriNova. All rights reserved.',
+
+                // Home Page
+                'hero_title_1': 'Smart Agriculture',
+                'hero_title_2': 'at your fingertips.',
+                'hero_desc': 'AgriNova empowers farmers with AI-driven fertilizer recommendations, instant disease detection, and a 24/7 farming assistant.',
+                'btn_get_rec': 'Get Recommendation',
+                'btn_det_dis': 'Detect Disease',
+                'btn_chat_ai': 'Chat with AI',
+                'feat_title': 'Features',
+                'feat_sub': 'Everything you need to grow better',
+                'feat_fert_title': 'Fertilizer Recommendation',
+                'feat_fert_desc': 'Analyze soil parameters like N, P, K, and pH to get scientifically backed fertilizer suggestions.',
+                'feat_dis_title': 'Disease Detection',
+                'feat_dis_desc': 'Upload photos of your crops (Rice/Cotton) to instantly identify diseases and treatment plans.',
+                'feat_ai_title': 'AI Farming Assistant',
+                'feat_ai_desc': 'Ask any farming related question to our AI assistant trained on agricultural knowledge.',
+
+                // Fertilizer Page
+                'fert_title': 'Fertilizer Recommendation',
+                'loading_form': 'Loading form requirements...',
+                'analyzing': 'Analyzing soil parameters...',
+                'result_header': 'Analysis Result',
+                'rec_fert_label': 'Recommended Fertilizer',
+                'remarks_label': 'Remarks',
+                'expert_advice_label': 'Expert Advice',
+                'mode_farmer': '🌱 Farmer Mode',
+                'mode_lab': '🔬 Lab Report Mode',
+                'mode_farmer_title': '🌱 Farmer Mode',
+                'mode_farmer_badge': 'Recommended for Farmers',
+                'mode_farmer_desc': 'No soil laboratory test report? Choose this to select indicators based on leaf colors and soil moisture.',
+                'mode_lab_title': '🔬 Lab Report Mode',
+                'mode_lab_desc': 'Have a laboratory report? Choose this if you want to type in exact soil test numbers.',
+                'portal_title': 'How would you like to get your recommendation?',
+                'portal_sub': 'Choose the method that suits you best',
+                'btn_back_portal': '← Switch Input Mode',
+                'opt_low': 'Low (Deficient)',
+                'opt_medium': 'Medium (Normal)',
+                'opt_high': 'High (Abundant)',
+                'opt_acidic': 'Acidic (Sour)',
+                'opt_neutral': 'Neutral (Normal)',
+                'opt_alkaline': 'Alkaline (Alkali/Chalky)',
+                'opt_dry': 'Dry / Sandy',
+                'opt_moist': 'Moist / Perfect',
+                'opt_wet': 'Wet / Muddy',
+
+                // Form Fields (Dynamic keys)
+                'nitrogen': 'Nitrogen',
+                'phosphorous': 'Phosphorous',
+                'potassium': 'Potassium',
+                'potassium': 'Potassium',
+                'temperature': 'Temperature',
+                'humidity': 'Humidity',
+                'moisture': 'Moisture',
+                'rainfall': 'Rainfall',
+                'ph': 'pH Level',
+                'carbon': 'Organic Carbon',
+                'soil': 'Soil Type',
+                'crop': 'Crop Type',
+                'soil type': 'Soil Type',
+                'crop type': 'Crop Type',
+
+                // Dropdown Options
+                'rice': 'Rice',
+                'wheat': 'Wheat',
+                'cotton': 'Cotton',
+                'maize': 'Maize',
+                'loamy soil': 'Loamy Soil',
+                'peaty soil': 'Peaty Soil',
+                'neutral soil': 'Neutral Soil',
+                'acidic soil': 'Acidic Soil',
+
+                // Crop and Disease Results (English keys)
+                'bacterial blight': 'Bacterial Blight',
+                'curl virus': 'Leaf Curl Virus',
+                'healthy leaf': 'Healthy Leaf',
+                'herbicide growth damage': 'Herbicide Growth Damage',
+                'leaf hopper jassids': 'Leaf Hopper Jassids',
+                'leaf redding': 'Leaf Redding',
+                'leaf variegation': 'Leaf Variegation',
+                'bacterial leaf blight': 'Bacterial Leaf Blight',
+                'brown spot': 'Brown Spot',
+                'healthy rice leaf': 'Healthy Rice Leaf',
+                'leaf blast': 'Leaf Blast',
+                'leaf scald': 'Leaf Scald',
+                'narrow brown leaf spot': 'Narrow Brown Leaf Spot',
+                'rice hispa': 'Rice Hispa',
+                'sheath blight': 'Sheath Blight',
+
+                // Disease Page
+                'dis_page_title': 'Disease Detection',
+                'dis_page_desc': 'Identify crop diseases instantly using AI.',
+                'upload_title': 'Upload Leaf Image',
+                'upload_desc': 'Drag & Drop your image here or click to select',
+                'btn_detect': 'Detect Disease',
+                'btn_clear': 'Clear',
+                'det_crop_label': 'Detected Crop',
+                'det_dis_label': 'Detected Disease',
+                'det_conf_label': 'Confidence',
+                'detecting': 'Analyzing image...',
+                'btn_listen': 'Listen',
+                'btn_stop': 'Stop',
+                'btn_loading': 'Loading...',
+                'err_tts_local_urdu': 'Local Urdu/Hindi TTS voice not found. Please connect to the internet for online TTS, or install an Urdu/Hindi language pack on your device.',
+
+                'langText': 'Urdu'
+            },
+            'ur': {
+                'brand': 'ایگری نووا',
+                'nav_home': 'ہوم',
+                'nav_fert': 'کھاد معلوم کریں',
+                'nav_disease': 'بیماری کی شناخت',
+                'nav_chat': 'چیٹ بوٹ',
+                'chat_title': 'ایگری نووا اسسٹنٹ',
+                'chat_sub': 'کاشتکاری کے بارے میں کچھ بھی پوچھیں',
+                'chat_welcome': 'السلام علیکم! آج میں آپ کی فصلوں کے بارے میں کس طرح مدد کرسکتا ہوں؟',
+                'chat_placeholder': 'پیغام ٹائپ کریں...',
+                'footer_text': '© 2026 ایگری نووا۔ جملہ حقوق محفوظ ہیں۔',
+                'btn_listen': 'سنیں',
+                'btn_stop': 'روکیں',
+                'btn_loading': 'لوڈ ہو رہا ہے...',
+                'err_tts_local_urdu': 'آپ کے سسٹم پر اردو/ہندی آواز نہیں ملی۔ آن لائن آواز سننے کے لیے انٹرنیٹ سے منسلک ہوں یا اپنے ڈیوائس پر اردو/ہندی زبان کا پیکج انسٹال کریں۔',
+
+                // Home Page
+                'hero_title_1': 'اسمارٹ زراعت',
+                'hero_title_2': 'آپ کی انگلیوں پر۔',
+                'hero_desc': 'ایگری نووا کسانوں کو مصنوعی ذہانت سے چلنے والی کھاد کی سفارشات، فوری بیماری کی شناخت اور 24/7 زرعی معاون کے ساتھ بااختیار بناتا ہے۔',
+                'btn_get_rec': 'سفارش حاصل کریں',
+                'btn_det_dis': 'بیماری کی شناخت',
+                'btn_chat_ai': 'اے آئی سے بات کریں',
+                'feat_title': 'خصوصیات',
+                'feat_sub': 'بہتر پیداوار کے لیے آپ کو ہر چیز کی ضرورت ہے',
+                'feat_fert_title': 'کھاد معلوم کریں',
+                'feat_fert_desc': 'سائنسی بنیاد پر کھاد کی تجاویز حاصل کرنے کے لیے مٹی کے پیرامیٹرز کا تجزیہ کریں۔',
+                'feat_dis_title': 'بیماری کی شناخت',
+                'feat_dis_desc': 'بیماریوں اور علاج کے منصوبوں کی فوری شناخت کے لیے اپنی فصلوں (چاول/کپاس) کی تصاویر اپ لوڈ کریں۔',
+                'feat_ai_title': 'زرعی معاون',
+                'feat_ai_desc': 'ہمارے اے آئی اسسٹنٹ سے کھیتی باڑی سے متعلق کوئی بھی سوال پوچھیں۔',
+
+                // Fertilizer Page
+                'fert_title': 'کھاد معلوم کریں',
+                'loading_form': 'فارم کی ضروریات لوڈ ہو رہی ہیں...',
+                'analyzing': 'مٹی کے پیرامیٹرز کا تجزیہ کیا جا رہا ہے...',
+                'result_header': 'تجزیہ کا نتیجہ',
+                'rec_fert_label': 'تجویز کردہ کھاد',
+                'remarks_label': 'ریمارکس',
+                'expert_advice_label': 'ماہرانہ مشورہ',
+                'mode_farmer': '🌱 کسان موڈ',
+                'mode_lab': '🔬 لیبارٹری رپورٹ موڈ',
+                'mode_farmer_title': '🌱 کسان موڈ',
+                'mode_farmer_badge': 'کسانوں کے لیے موزوں ترین',
+                'mode_farmer_desc': 'اگر آپ کے پاس لیبارٹری ٹیسٹ رپورٹ نہیں ہے تو پتے کے رنگ اور مٹی کی نمی دیکھ کر انتخاب کریں۔',
+                'mode_lab_title': '🔬 لیبارٹری رپورٹ',
+                'mode_lab_desc': 'اگر آپ کے پاس لیبارٹری کی مٹی ٹیسٹ رپورٹ موجود ہے اور آپ نائٹروجن اور پی ایچ کی درست ترین مقدار لکھنا چاہتے ہیں۔',
+                'portal_title': 'کھاد معلوم کریں کے لیے طریقہ کار منتخب کریں',
+                'portal_sub': 'وہ طریقہ منتخب کریں جو آپ کے لیے موزوں ہو',
+                'btn_back_portal': '← طریقہ تبدیل کریں',
+                'opt_low': 'کم (کمی ہے)',
+                'opt_medium': 'درمیانہ (مناسب)',
+                'opt_high': 'زیادہ (وافر مقدار)',
+                'opt_acidic': 'تیزابی (ترش)',
+                'opt_neutral': 'عام (نارمل)',
+                'opt_alkaline': 'الکلائن (کھاری)',
+                'opt_dry': 'خشک / ریتلی مٹی',
+                'opt_moist': 'نرم / مناسب نمی',
+                'opt_wet': 'گیلی / دلدلی',
+
+                // Form Fields
+                'nitrogen': 'نائٹروجن',
+                'phosphorous': 'فاسفورس',
+                'potassium': 'پوٹاشیم',
+                'potassium': 'پوٹاشیم',
+                'temperature': 'درجہ حرارت',
+                'humidity': 'ہوا کی نمی',
+                'moisture': 'مٹی کی نمی',
+                'rainfall': 'بارش',
+                'ph': 'پی ایچ کی سطح',
+                'carbon': 'نامیاتی کاربن',
+                'soil': 'مٹی کی قسم',
+                'crop': 'فصل کی قسم',
+                'soil type': 'مٹی کی قسم',
+                'crop type': 'فصل کی قسم',
+
+                // Dropdown Options
+                'rice': 'چاول',
+                'wheat': 'گندم',
+                'cotton': 'کپاس',
+                'maize': 'مکئی',
+                'loamy soil': 'لومی مٹی (Loamy)',
+                'peaty soil': 'پیٹی مٹی (Peaty)',
+                'neutral soil': 'غیر جانبدار مٹی (Neutral)',
+                'acidic soil': 'تیزابی مٹی (Acidic)',
+
+                // Crop and Disease Results (Urdu translations)
+                'bacterial blight': 'بیکٹیریل جھلسائو',
+                'curl virus': 'پتہ مروڑ وائرس',
+                'healthy leaf': 'صحت مند پتہ',
+                'herbicide growth damage': 'جڑی بوٹی مار زہر کا اثر',
+                'leaf hopper jassids': 'سبز تیلا (جیسڈ)',
+                'leaf redding': 'پتوں کا سرخ ہونا',
+                'leaf variegation': 'چتکبرے پتے',
+                'bacterial leaf blight': 'پتوں کا بیکٹیریل جھلسائو',
+                'brown spot': 'بھورے دھبے',
+                'healthy rice leaf': 'صحت مند چاول کا پتہ',
+                'leaf blast': 'دھان کا بلاسٹ',
+                'leaf scald': 'پتوں کا جھلسنا (اسکالڈ)',
+                'narrow brown leaf spot': 'باریک بھورے دھبے',
+                'rice hispa': 'دھان کا ہسپا',
+                'sheath blight': 'تنے کا جھلسائو (شیتھ بلائٹ)',
+
+                // Disease Page
+                'dis_page_title': 'بیماری کی شناخت',
+                'dis_page_desc': 'مصنوعی ذہانت کے ذریعے فصلوں کی بیماریوں کو فوری پہچانیں۔',
+                'upload_title': 'پتے کی تصویر اپ لوڈ کریں',
+                'upload_desc': 'اپنی تصویر یہاں ڈریگ کریں یا منتخب کرنے کے لیے کلک کریں',
+                'btn_detect': 'بیماری شناخت کریں',
+                'btn_clear': 'صاف کریں',
+                'det_crop_label': 'شناخت شدہ فصل',
+                'det_dis_label': 'شناخت شدہ بیماری',
+                'det_conf_label': 'اعتماد کی سطح',
+                'detecting': 'تصویر کا تجزیہ کیا جا رہا ہے...',
+
+                'langText': 'English'
+            }
+        };
+
+        function updateUI() {
+            const t = window.translations[currentLang];
+
+            // 1. Text Content
+            document.querySelectorAll('[data-key]').forEach(el => {
+                const key = el.getAttribute('data-key');
+                if (t[key]) el.textContent = t[key];
+            });
+
+            // 2. Placeholders
+            document.querySelectorAll('[data-key-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-key-placeholder');
+                if (t[key]) el.placeholder = t[key];
+            });
+
+            // 3. Language Toggle Text
+            const langText = document.getElementById('langText');
+            if (langText) langText.textContent = t['langText'];
+
+            // 4. Direction (RTL for Urdu)
+            if (currentLang === 'ur') {
+                document.body.setAttribute('dir', 'rtl');
+                document.body.classList.add('text-right');
+            } else {
+                document.body.setAttribute('dir', 'ltr');
+                document.body.classList.remove('text-right');
+            }
+
+            // Dispatch event for dynamic components (like the form options)
+            document.dispatchEvent(new CustomEvent('langChange', { detail: { lang: currentLang, t: t } }));
+
+            localStorage.setItem('agrinova_lang', currentLang);
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ur' : 'en';
+            localStorage.setItem('agrinova_lang', currentLang);
+            location.reload();
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const iconClosed = document.getElementById('menuIconClosed');
+            const iconOpen = document.getElementById('menuIconOpen');
+            
+            const isHidden = menu.classList.contains('hidden');
+            if (isHidden) {
+                menu.classList.remove('hidden');
+                iconClosed.classList.add('hidden');
+                iconOpen.classList.remove('hidden');
+            } else {
+                menu.classList.add('hidden');
+                iconClosed.classList.remove('hidden');
+                iconOpen.classList.add('hidden');
+            }
+        }
+
+        // --- Text-to-Speech Helper ---
+        let currentUtterance = null;
+        let currentAudio = null;
+        window.activeUtterances = [];
+
+        window.speakText = function(text, langCode, buttonEl) {
+            // Stop any currently playing audio/speech
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+
+            // Restore previously playing button visual state
+            if (currentUtterance && currentUtterance.btnRef) {
+                setButtonState(currentUtterance.btnRef, 'idle');
+            }
+
+            // Toggle Stop behavior
+            if (currentUtterance && currentUtterance.textToSpeak === text) {
+                currentUtterance = null;
+                return;
+            }
+
+            // Track active utterance
+            currentUtterance = { textToSpeak: text, btnRef: buttonEl };
+
+            const targetLang = langCode === 'ur' ? 'ur' : 'en';
+
+            if (targetLang === 'ur') {
+                // Use local backend TTS endpoint powered by gTTS
+                playBackendTTS(text, 'ur', buttonEl);
+            } else {
+                // Use browser-native for English
+                playLocalTTS(text, 'en', buttonEl);
+            }
+        };
+
+        function playBackendTTS(text, langCode, buttonEl) {
+            let cleanText = text.replace(/[#*`_-]/g, ' ').replace(/\s+/g, ' ').trim();
+            if (!cleanText) {
+                setButtonState(buttonEl, 'idle');
+                currentUtterance = null;
+                return;
+            }
+
+            setButtonState(buttonEl, 'loading');
+
+            const url = "/api/tts?lang=" + langCode + "&text=" + encodeURIComponent(cleanText);
+            
+            const audio = new Audio(url);
+            currentAudio = audio;
+            
+            audio.onplaying = () => {
+                setButtonState(buttonEl, 'playing');
+            };
+
+            audio.onended = () => {
+                setButtonState(buttonEl, 'idle');
+                currentUtterance = null;
+                currentAudio = null;
+            };
+            
+            audio.onerror = () => {
+                console.warn("Backend TTS failed to play, attempting local fallback...");
+                currentAudio = null;
+                playLocalTTS(cleanText, langCode, buttonEl);
+            };
+            
+            audio.play().catch(err => {
+                console.warn("Audio play failed, attempting local fallback:", err);
+                currentAudio = null;
+                playLocalTTS(cleanText, langCode, buttonEl);
+            });
+        }
+
+        function playLocalTTS(text, langCode, buttonEl) {
+            if (!window.speechSynthesis) return;
+
+            let cleanText = text.replace(/[#*`_-]/g, ' ').replace(/\n+/g, '. ').trim();
+            if (!cleanText) return;
+
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.textToSpeak = text;
+            utterance.btnRef = buttonEl;
+
+            // Keep reference to prevent GC in Chrome/Edge
+            if (!window.activeUtterances) window.activeUtterances = [];
+            window.activeUtterances.push(utterance);
+
+            const targetLang = langCode === 'ur' ? 'ur' : 'en';
+            
+            let voices = window.speechSynthesis.getVoices();
+            let matchingVoice = null;
+
+            if (targetLang === 'ur') {
+                matchingVoice = voices.find(v => v.lang.toLowerCase().startsWith('ur')) || 
+                                voices.find(v => v.lang.toLowerCase().startsWith('hi')) ||
+                                voices.find(v => {
+                                    const n = v.name.toLowerCase();
+                                    return n.includes('pakistan') || n.includes('india') || n.includes('urdu') || n.includes('hindi');
+                                });
+                if (!matchingVoice) {
+                    console.warn("Local Urdu/Hindi TTS voice not found.");
+                    const currentLang = localStorage.getItem('agrinova_lang') || 'en';
+                    const t = window.translations ? window.translations[currentLang] : {};
+                    alert(t['err_tts_local_urdu'] || 'Local Urdu/Hindi TTS voice not found. Please connect to the internet for online TTS, or install an Urdu/Hindi language pack on your device.');
+                    setButtonState(buttonEl, 'idle');
+                    currentUtterance = null;
+                    // Clean up reference
+                    window.activeUtterances = window.activeUtterances.filter(u => u !== utterance);
+                    return;
+                }
+            } else {
+                matchingVoice = voices.find(v => v.lang.toLowerCase().startsWith('en'));
+            }
+
+            if (matchingVoice) {
+                utterance.voice = matchingVoice;
+                utterance.lang = matchingVoice.lang;
+            } else if (targetLang === 'en') {
+                utterance.lang = 'en-US';
+            }
+
+            utterance.onstart = () => {
+                setButtonState(buttonEl, 'playing');
+            };
+
+            utterance.onend = utterance.onerror = () => {
+                setButtonState(buttonEl, 'idle');
+                if (currentUtterance && currentUtterance.textToSpeak === text) {
+                    currentUtterance = null;
+                }
+                // Clean up reference
+                window.activeUtterances = window.activeUtterances.filter(u => u !== utterance);
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function setButtonState(btn, state) {
+            if (!btn) return;
+            const icon = btn.querySelector('.speaker-icon');
+            const label = btn.querySelector('.speaker-text');
+            const currentLang = localStorage.getItem('agrinova_lang') || 'en';
+            const t = window.translations ? window.translations[currentLang] : {};
+
+            if (state === 'playing') {
+                if (icon) icon.textContent = '⏹️';
+                if (label) label.textContent = t['btn_stop'] || 'Stop';
+                btn.classList.remove('bg-green-100', 'text-green-700', 'bg-green-50', 'text-green-705', 'bg-blue-100', 'text-blue-700');
+                btn.classList.add('bg-red-100', 'text-red-700');
+                btn.disabled = false;
+            } else if (state === 'loading') {
+                if (icon) icon.textContent = '⏳';
+                if (label) label.textContent = t['btn_loading'] || 'Loading...';
+                btn.classList.remove('bg-green-100', 'text-green-700', 'bg-green-50', 'text-green-705', 'bg-red-100', 'text-red-700');
+                btn.classList.add('bg-blue-100', 'text-blue-700');
+                btn.disabled = true;
+            } else {
+                if (icon) icon.textContent = '🔊';
+                if (label) label.textContent = t['btn_listen'] || 'Listen';
+                btn.classList.remove('bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700');
+                btn.disabled = false;
+                if (btn.id === 'speakDisease') {
+                    btn.classList.add('bg-green-50', 'text-green-705');
+                } else if (btn.id === 'speakFertilizer') {
+                    btn.classList.add('bg-green-100', 'text-green-700');
+                } else {
+                    btn.classList.add('bg-green-50', 'text-green-700');
+                }
+            }
+        }
+
+        // Pre-fetch voices on load
+        if (window.speechSynthesis && typeof window.speechSynthesis.addEventListener === 'function') {
+            window.speechSynthesis.addEventListener('voiceschanged', () => {
+                window.speechSynthesis.getVoices();
+            });
+        }
+
+        // --- Chat Logic ---
+        function toggleChat() {
+            const win = document.getElementById('chatWindow');
+            win.classList.toggle('hidden');
+            if (!win.classList.contains('hidden')) {
+                document.getElementById('chatInput').focus();
+            }
+        }
+
+        document.getElementById('chatForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Append User Message
+            appendMessage('user', text);
+            input.value = '';
+
+            // Show Loading
+            showChatLoading();
+
+            try {
+                const res = await fetch('/api/chat/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: text, language: currentLang })
+                });
+                const data = await res.json();
+                hideChatLoading();
+                appendMessage('assistant', data.response || "Error getting response");
+            } catch (err) {
+                hideChatLoading();
+                appendMessage('assistant', "⚠️ Connection Error");
+            }
+        });
+
+        function appendMessage(role, text) {
+            const chatBox = document.getElementById('chatMessages');
+            const bg = role === 'user' ? 'bg-green-600 text-white rounded-br-none' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none';
+
+            // Parse markdown for assistant messages
+            const content = role === 'assistant' ? marked.parse(text) : `<p class="chat-message whitespace-pre-wrap">${text}</p>`;
+
+            const div = document.createElement('div');
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`; // Let Flexbox handle RTL swapping
+            
+            // Add speaker button below AI messages
+            let speakBtn = '';
+            if (role === 'assistant') {
+                const safeText = encodeURIComponent(text);
+                const currentLangLabel = currentLang === 'ur' ? 'سنیں' : 'Listen';
+                speakBtn = `
+                    <button onclick="window.speakText(decodeURIComponent('${safeText}'), currentLang, this)" class="chat-speaker mt-2 text-[10px] font-bold px-2 py-1 bg-green-50 text-green-700 rounded-full hover:bg-green-100 transition flex items-center gap-1 focus:outline-none">
+                        <span class="speaker-icon">🔊</span> <span class="speaker-text">${currentLangLabel}</span>
+                    </button>
+                `;
+            }
+
+            div.innerHTML = `
+                <div class="max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm ${bg}">
+                    <div class="chat-content">${content}</div>
+                    ${speakBtn}
+                </div>
+            `;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function showChatLoading() {
+            const chatBox = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.id = 'chatLoader';
+            div.className = 'flex justify-start';
+            div.innerHTML = `
+                <div class="bg-white px-3 py-2 rounded-2xl rounded-bl-none border border-gray-100 shadow-sm flex space-x-1">
+                     <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce"></div>
+                     <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                     <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                </div>
+            `;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function hideChatLoading() {
+            const l = document.getElementById('chatLoader');
+            if (l) l.remove();
+        }
+
+        // Global Toast Notification Helper
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const card = document.createElement('div');
+            card.className = `toast-card toast-${type}`;
+            
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '❌';
+            if (type === 'warning') icon = '⚠️';
+
+            card.innerHTML = `
+                <span class="text-lg">${icon}</span>
+                <span class="text-sm font-medium flex-1">${message}</span>
+            `;
+
+            container.appendChild(card);
+
+            // Auto dismiss after 4 seconds
+            setTimeout(() => {
+                card.classList.add('toast-fade-out');
+                setTimeout(() => {
+                    card.remove();
+                }, 300);
+            }, 4000);
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', updateUI);
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,41 @@
+====================================================
+   AGRINOVA DISEASE DETECTION DATASET DESCRIPTION
+====================================================
+
+--- COTTON DATASET ---
+Total Original Images:  2137
+Total Augmented Images: 14959
+Total Combined Pool:    17096
+
+Class Breakdown (Original | Augmented):
+  - Bacterial Blight          :   250 |  1750
+  - Curl Virus                :   431 |  3017
+  - Healthy Leaf              :   257 |  1799
+  - Herbicide Growth Damage   :   280 |  1960
+  - Leaf Hopper Jassids       :   225 |  1575
+  - Leaf Redding              :   578 |  4046
+  - Leaf Variegation          :   116 |   812
+--------------------------------------------------
+
+--- RICE DATASET ---
+Total Original Images:  1701
+Total Augmented Images: 11907
+Total Combined Pool:    13608
+
+Class Breakdown (Original | Augmented):
+  - Bacterial Leaf Blight     :   180 |  1260
+  - Brown Spot                :   267 |  1869
+  - Healthy Rice Leaf         :   157 |  1099
+  - Leaf Blast                :   305 |  2135
+  - Leaf scald                :   189 |  1323
+  - Narrow Brown Leaf Spot    :   117 |   819
+  - Rice Hispa                :   215 |  1505
+  - Sheath Blight             :   271 |  1897
+--------------------------------------------------
+
+GRAND TOTAL DATASET SIZE: 30704 images.
+
+Notes:
+- Strategy: Physical Dataset Expansion (Offline Augmentation)
+- Augmentation Factor: ~3x per original image
+- Methodology: Strict isolation of original images for scientific testing.

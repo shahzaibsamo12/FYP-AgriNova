@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-12 animate-fade-in">
+            <h1 class="text-4xl font-extrabold text-gray-900 sm:text-5xl" data-key="dis_page_title">Disease Detection</h1>
+            <p class="mt-4 text-xl text-gray-600" data-key="dis_page_desc">Identify crop diseases instantly using AI.</p>
+        </div>
+
+        <!-- Upload & Camera Section -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-200 mb-6">
+                <button type="button" id="tabUpload" class="w-1/2 py-3 text-center border-b-2 border-green-600 text-green-600 font-bold focus:outline-none transition-all flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span>Upload File</span>
+                </button>
+                <button type="button" id="tabCamera" class="w-1/2 py-3 text-center border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-bold focus:outline-none transition-all flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span>Use Camera</span>
+                </button>
+            </div>
+
+            <form id="diseaseForm" class="space-y-6">
+                <!-- Upload Container -->
+                <div id="uploadContainer" class="block">
+                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-12 bg-gray-50 hover:bg-gray-100 transition-all cursor-pointer group" id="dropZone">
+                        <input type="file" id="fileInput" name="file" accept="image/*" class="hidden">
+                        <div class="text-center" id="uploadPrompt">
+                            <div class="mx-auto h-20 w-20 text-gray-400 group-hover:text-green-500 transition-colors">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <p class="mt-4 text-lg font-medium text-gray-900" data-key="upload_title">Upload Leaf Image</p>
+                            <p class="mt-1 text-sm text-gray-500" data-key="upload_desc">Drag & Drop your image here or click to select</p>
+                        </div>
+                        <div id="imagePreview" class="hidden w-full max-w-md">
+                            <img src="" alt="Preview" class="rounded-lg shadow-md mx-auto max-h-80 object-contain">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Camera Container -->
+                <div id="cameraContainer" class="hidden">
+                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50 relative overflow-hidden min-h-[300px]">
+                        <!-- Webcam Feed -->
+                        <div class="relative w-full max-w-md rounded-lg shadow-md overflow-hidden bg-black aspect-video flex items-center justify-center">
+                            <video id="webcam" autoplay playsinline class="w-full h-full object-cover"></video>
+                            
+                            <!-- Overlay instructions before camera starts -->
+                            <div id="cameraPrompt" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 bg-opacity-95 text-white p-6 text-center">
+                                <svg class="w-16 h-16 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                <p class="font-medium text-lg">Webcam access required</p>
+                                <p class="text-sm text-gray-400 mt-1">Click the button below to enable camera</p>
+                            </div>
+
+                            <!-- Snapshot Preview -->
+                            <div id="snapshotPreview" class="hidden absolute inset-0 bg-black flex items-center justify-center">
+                                <img src="" alt="Snapshot" class="w-full h-full object-contain">
+                            </div>
+                        </div>
+
+                        <!-- Canvas (hidden) -->
+                        <canvas id="canvas" class="hidden"></canvas>
+
+                        <!-- Controls -->
+                        <div class="mt-6 flex flex-wrap justify-center gap-4">
+                            <button type="button" id="startCamBtn" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                <span>Start Camera</span>
+                            </button>
+                            <button type="button" id="captureBtn" class="hidden px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                <span>Capture Photo</span>
+                            </button>
+                            <button type="button" id="retakeBtn" class="hidden px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-md transition-all flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 12H20M9 9H4v5L9 9z"></path></svg>
+                                <span>Retake Photo</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-4">
+                    <button type="button" id="clearBtn" class="hidden px-8 py-3 bg-white border border-gray-300 text-gray-700 font-bold rounded-xl shadow-sm hover:bg-gray-50 transition-all focus:outline-none focus:ring-4 focus:ring-gray-100">
+                        <span data-key="btn_clear">Clear</span>
+                    </button>
+                    <button type="submit" id="submitBtn" class="hidden px-8 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 hover:scale-105 transition-all focus:outline-none focus:ring-4 focus:ring-green-300">
+                        <span data-key="btn_detect">Detect Disease</span>
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Result Section -->
+        <div id="resultSection" class="hidden">
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div class="bg-green-700 py-4 px-8 flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-white text-center" data-key="result_header">Analysis Result</h2>
+                    <button id="speakDisease" onclick="speakDiseaseResults(this)" class="text-xs font-bold px-3 py-1.5 bg-green-50 text-green-705 rounded-full hover:bg-green-150 transition flex items-center gap-1 focus:outline-none">
+                        <span class="speaker-icon">🔊</span> <span class="speaker-text" data-key="btn_listen">Listen</span>
+                    </button>
+                </div>
+                
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-green-50 p-6 rounded-xl border border-green-100">
+                            <p class="text-xs font-bold text-green-600 uppercase tracking-wider mb-1" data-key="det_crop_label">Detected Crop</p>
+                            <p id="resCrop" class="text-2xl font-bold text-gray-800">-</p>
+                        </div>
+                        <div class="bg-green-50 p-6 rounded-xl border border-green-100">
+                            <p class="text-xs font-bold text-green-600 uppercase tracking-wider mb-1" data-key="det_dis_label">Detected Disease</p>
+                            <p id="resDisease" class="text-2xl font-bold text-gray-800 text-center">-</p>
+                        </div>
+                        <div class="bg-green-50 p-6 rounded-xl border border-green-100">
+                            <p class="text-xs font-bold text-green-600 uppercase tracking-wider mb-1" data-key="det_conf_label">Confidence</p>
+                            <p id="resConf" class="text-2xl font-bold text-gray-800">-</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-gray-50 p-6 rounded-xl border border-gray-100">
+                            <h3 class="text-sm font-bold text-gray-500 uppercase mb-4" data-key="expert_advice_label">Expert AI Advice</h3>
+                            <div id="resAdvice" class="prose prose-green rtl:prose-rtl max-w-none text-gray-700 leading-relaxed text-start chat-content">
+                                <!-- AI Content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center backdrop-blur-sm">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center">
+                <div class="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p class="text-lg font-bold text-gray-800" data-key="detecting">Analyzing image...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tabs
+    const tabUpload = document.getElementById('tabUpload');
+    const tabCamera = document.getElementById('tabCamera');
+    const uploadContainer = document.getElementById('uploadContainer');
+    const cameraContainer = document.getElementById('cameraContainer');
+    let activeTab = 'upload'; // 'upload' or 'camera'
+
+    // Upload Elements
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+
+    // Camera Elements
+    const webcam = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const cameraPrompt = document.getElementById('cameraPrompt');
+    const snapshotPreview = document.getElementById('snapshotPreview');
+    const startCamBtn = document.getElementById('startCamBtn');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    let webcamStream = null;
+    let capturedBlob = null;
+
+    // Shared Elements
+    const submitBtn = document.getElementById('submitBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const diseaseForm = document.getElementById('diseaseForm');
+    const resultSection = document.getElementById('resultSection');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    const getLang = () => localStorage.getItem('agrinova_lang') || 'en';
+
+    // Tab switching logic
+    tabUpload.addEventListener('click', () => {
+        activeTab = 'upload';
+        tabUpload.classList.add('border-green-600', 'text-green-600');
+        tabUpload.classList.remove('border-transparent', 'text-gray-500');
+        tabCamera.classList.remove('border-green-600', 'text-green-600');
+        tabCamera.classList.add('border-transparent', 'text-gray-500');
+        
+        uploadContainer.classList.remove('hidden');
+        uploadContainer.classList.add('block');
+        cameraContainer.classList.add('hidden');
+        cameraContainer.classList.remove('block');
+        
+        stopWebcam();
+        
+        // Show submit & clear button if file is present
+        if (fileInput.files[0]) {
+            submitBtn.classList.remove('hidden');
+            clearBtn.classList.remove('hidden');
+        } else {
+            submitBtn.classList.add('hidden');
+            clearBtn.classList.add('hidden');
+        }
+    });
+
+    tabCamera.addEventListener('click', () => {
+        activeTab = 'camera';
+        tabCamera.classList.add('border-green-600', 'text-green-600');
+        tabCamera.classList.remove('border-transparent', 'text-gray-500');
+        tabUpload.classList.remove('border-green-600', 'text-green-600');
+        tabUpload.classList.add('border-transparent', 'text-gray-500');
+        
+        cameraContainer.classList.remove('hidden');
+        cameraContainer.classList.add('block');
+        uploadContainer.classList.add('hidden');
+        uploadContainer.classList.remove('block');
+        
+        // Try starting camera automatically
+        startWebcam();
+        
+        // Show submit & clear button if snapshot is captured
+        if (capturedBlob) {
+            submitBtn.classList.remove('hidden');
+            clearBtn.classList.remove('hidden');
+        } else {
+            submitBtn.classList.add('hidden');
+            clearBtn.classList.add('hidden');
+        }
+    });
+
+    async function startWebcam() {
+        try {
+            if (webcamStream) return; // already running
+            cameraPrompt.classList.remove('hidden');
+            startCamBtn.classList.remove('hidden');
+            captureBtn.classList.add('hidden');
+            retakeBtn.classList.add('hidden');
+            snapshotPreview.classList.add('hidden');
+
+            const constraints = {
+                video: {
+                    facingMode: 'environment', // default to back camera if mobile
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                },
+                audio: false
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            webcamStream = stream;
+            webcam.srcObject = stream;
+            cameraPrompt.classList.add('hidden');
+            startCamBtn.classList.add('hidden');
+            captureBtn.classList.remove('hidden');
+        } catch (err) {
+            console.error("Webcam access error:", err);
+            cameraPrompt.innerHTML = `
+                <svg class="w-16 h-16 text-red-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <p class="font-medium text-lg text-red-400">Failed to access camera</p>
+                <p class="text-xs text-gray-400 mt-1">${err.message || 'Please check browser permissions'}</p>
+            `;
+            cameraPrompt.classList.remove('hidden');
+            startCamBtn.classList.remove('hidden');
+        }
+    }
+
+    function stopWebcam() {
+        if (webcamStream) {
+            webcamStream.getTracks().forEach(track => track.stop());
+            webcamStream = null;
+        }
+        webcam.srcObject = null;
+    }
+
+    startCamBtn.addEventListener('click', startWebcam);
+
+    captureBtn.addEventListener('click', () => {
+        if (!webcamStream) return;
+
+        // Draw to canvas
+        canvas.width = webcam.videoWidth || 640;
+        canvas.height = webcam.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+
+        // Convert to Blob
+        canvas.toBlob((blob) => {
+            capturedBlob = blob;
+            
+            // Show snapshot preview
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            snapshotPreview.querySelector('img').src = dataUrl;
+            snapshotPreview.classList.remove('hidden');
+            
+            captureBtn.classList.add('hidden');
+            retakeBtn.classList.remove('hidden');
+            
+            submitBtn.classList.remove('hidden');
+            clearBtn.classList.remove('hidden');
+            
+            stopWebcam();
+        }, 'image/jpeg', 0.95);
+    });
+
+    retakeBtn.addEventListener('click', () => {
+        capturedBlob = null;
+        snapshotPreview.classList.add('hidden');
+        retakeBtn.classList.add('hidden');
+        submitBtn.classList.add('hidden');
+        clearBtn.classList.add('hidden');
+        
+        startWebcam();
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleFile(file);
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-green-500', 'bg-green-50');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-green-500', 'bg-green-50');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-green-500', 'bg-green-50');
+        const file = e.dataTransfer.files[0];
+        if (file) handleFile(file);
+    });
+
+    function handleFile(file) {
+        if (!file.type.startsWith('image/')) {
+            if (window.showToast) window.showToast('Please upload an image file.', 'warning');
+            else alert('Please upload an image file.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagePreview.querySelector('img').src = e.target.result;
+            imagePreview.classList.remove('hidden');
+            uploadPrompt.classList.add('hidden');
+            submitBtn.classList.remove('hidden');
+            clearBtn.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    clearBtn.addEventListener('click', () => {
+        if (window.speechSynthesis && window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+        }
+
+        if (activeTab === 'upload') {
+            fileInput.value = '';
+            imagePreview.classList.add('hidden');
+            uploadPrompt.classList.remove('hidden');
+        } else {
+            capturedBlob = null;
+            snapshotPreview.classList.add('hidden');
+            retakeBtn.classList.add('hidden');
+            startWebcam();
+        }
+        submitBtn.classList.add('hidden');
+        clearBtn.classList.add('hidden');
+        resultSection.classList.add('hidden');
+    });
+
+    diseaseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        if (activeTab === 'camera') {
+            if (!capturedBlob) {
+                if (window.showToast) window.showToast('Please capture a photo first.', 'warning');
+                else alert('Please capture a photo first.');
+                return;
+            }
+            formData.append('file', capturedBlob, 'webcam_capture.jpg');
+        } else {
+            if (!fileInput.files[0]) {
+                if (window.showToast) window.showToast('Please select an image file first.', 'warning');
+                else alert('Please select an image file first.');
+                return;
+            }
+            formData.append('file', fileInput.files[0]);
+        }
+        formData.append('language', getLang());
+
+        loadingOverlay.classList.remove('hidden');
+        resultSection.classList.add('hidden');
+
+        try {
+            const response = await fetch('/api/disease/detect', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.error) throw new Error(data.error);
+
+            const currentLang = localStorage.getItem('agrinova_lang') || 'en';
+            const t = window.translations ? window.translations[currentLang] : {};
+            const cropKey = String(data.crop || '').toLowerCase().trim();
+            const diseaseKey = String(data.disease || '').toLowerCase().trim();
+
+            document.getElementById('resCrop').textContent = (t && t[cropKey]) ? t[cropKey] : data.crop;
+            document.getElementById('resDisease').textContent = (t && t[diseaseKey]) ? t[diseaseKey] : data.disease;
+            let confText = data.confidence;
+            if (confText && !confText.includes('%')) {
+                confText = (parseFloat(confText) * 100).toFixed(1) + '%';
+            }
+            document.getElementById('resConf').textContent = confText;
+            
+            // Format AI advice as Markdown
+            const adviceEl = document.getElementById('resAdvice');
+            if (window.marked && (typeof window.marked.parse === 'function' || typeof window.marked === 'function')) {
+                const parseFn = typeof window.marked.parse === 'function' ? window.marked.parse : window.marked;
+                adviceEl.innerHTML = parseFn(String(data.advice).trim());
+            } else {
+                adviceEl.textContent = data.advice;
+            }
+
+            resultSection.classList.remove('hidden');
+            resultSection.classList.add('animate-fade-in');
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+
+        } catch (err) {
+            if (window.showToast) window.showToast(err.message || 'An unexpected error occurred.', 'error');
+            else alert('Error: ' + err.message);
+        } finally {
+            loadingOverlay.classList.add('hidden');
+        }
+    });
+
+    // Speak disease results logic
+    window.speakDiseaseResults = function(btn) {
+        const cropVal = document.getElementById('resCrop') ? document.getElementById('resCrop').textContent.trim() : '';
+        const disVal = document.getElementById('resDisease') ? document.getElementById('resDisease').textContent.trim() : '';
+        const confVal = document.getElementById('resConf') ? document.getElementById('resConf').textContent.trim() : '';
+        const adviceVal = document.getElementById('resAdvice') ? document.getElementById('resAdvice').innerText.trim() : '';
+        
+        const currentLang = localStorage.getItem('agrinova_lang') || 'en';
+        
+        let textToSpeak = "";
+        if (currentLang === 'ur') {
+            textToSpeak = `شناخت شدہ فصل: ${cropVal}۔ بیماری: ${disVal}۔ اعتماد: ${confVal}۔ ماہرانہ مشورہ: ${adviceVal}`;
+        } else {
+            textToSpeak = `Detected Crop: ${cropVal}. Disease: ${disVal}. Confidence: ${confVal}. Expert Advice: ${adviceVal}`;
+        }
+        
+        window.speakText(textToSpeak, currentLang, btn);
+    };
+</script>
+
+<style>
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fade-in 0.6s ease-out forwards;
+    }
+</style>
+{% endblock %}
