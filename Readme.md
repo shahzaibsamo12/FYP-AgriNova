@@ -588,11 +588,8 @@ All configurable values are centralised in `config.py`.
 | Name | Role |
 | --- | --- |
 | Shahzaib Samo | Machine learning engineering, backend development, full-stack integration |
-
 | Huzaifa | Machine learning engineering, testing, front end |
-
 | Sumaiya Owais | Machine learning engineering, backend development, full-stack integration |
-
 | Shaheer Alvi | Machine learning engineering, Front-End, Project testing |
 
 
